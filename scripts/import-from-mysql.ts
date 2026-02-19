@@ -9,8 +9,13 @@
  * Usage: npx tsx scripts/import-from-mysql.ts
  */
 
+import 'dotenv/config'  // Load .env.local
+import { config } from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
 import { execSync } from 'child_process'
+
+// Load .env.local explicitly (dotenv/config only loads .env)
+config({ path: '.env.local' })
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://jypywxllbigwvpvauqjo.supabase.co'
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || ''
