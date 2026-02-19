@@ -1,65 +1,132 @@
-import Image from "next/image";
+import Link from 'next/link'
+import { formatDayMonth, formatMonthNominative, getMonthDay, parseMonthDay, dateFromMonthDay, extractYear } from '@/lib/utils'
+import DatePicker from '@/components/DatePicker'
+import EventItem from '@/components/EventItem'
 
-export default function Home() {
+// Supabase — will be connected after migration
+// import { createClient } from '@/lib/supabase/server'
+
+interface DwEvent {
+  id: number
+  description: string
+  event_date: string
+  photos?: { id: number; url: string; title: string | null; author: string | null; source: string | null }[]
+}
+
+interface Props {
+  searchParams: Promise<{ data?: string }>
+}
+
+export default async function HomePage({ searchParams }: Props) {
+  const params = await searchParams
+
+  // Determine which date to display
+  let displayDate: Date
+  if (params.data) {
+    const parsed = parseMonthDay(params.data)
+    if (parsed) {
+      displayDate = dateFromMonthDay(parsed.month, parsed.day)
+    } else {
+      displayDate = new Date()
+    }
+  } else {
+    displayDate = new Date()
+  }
+
+  const mmdd = getMonthDay(displayDate)
+  const dayNum = displayDate.getDate()
+  const monthName = formatMonthNominative(displayDate)
+  const dayMonthFull = formatDayMonth(displayDate)
+
+  // ====== Fetch events from Supabase ======
+  let events: DwEvent[] = []
+
+  try {
+    // Dynamic import to avoid build errors when env vars aren't set
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+
+    const { data, error } = await supabase
+      .from('dw_events')
+      .select('*, photos:dw_photos(*)')
+      .like('event_date', `%-${mmdd}`)
+      .order('event_date', { ascending: true })
+
+    if (!error && data) {
+      events = data as DwEvent[]
+    }
+  } catch {
+    // Supabase not configured yet — show empty state
+  }
+
+  // Calculate previous and next day links
+  const prevDate = new Date(displayDate)
+  prevDate.setDate(prevDate.getDate() - 1)
+  const nextDate = new Date(displayDate)
+  nextDate.setDate(nextDate.getDate() + 1)
+
+  const prevLink = `/?data=${getMonthDay(prevDate)}`
+  const nextLink = `/?data=${getMonthDay(nextDate)}`
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      {/* Date header */}
+      <div className="text-center mb-8">
+        <h1 className="font-heading text-sm font-semibold uppercase tracking-widest text-gray-500 mb-1">
+          Kalendarium Południowej Wielkopolski
+        </h1>
+        <div className="flex items-center justify-center gap-4 mb-2">
+          <Link
+            href={prevLink}
+            className="text-2xl text-gray-400 hover:text-[#b50926] transition-colors"
+            aria-label="Poprzedni dzień"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            ‹
+          </Link>
+          <div>
+            <p className="font-heading text-5xl md:text-6xl font-bold text-[#b50926] leading-none">
+              {dayNum}
+            </p>
+            <p className="font-heading text-xl md:text-2xl font-semibold uppercase tracking-wider text-[#1d1d1b]">
+              {monthName}
+            </p>
+          </div>
+          <Link
+            href={nextLink}
+            className="text-2xl text-gray-400 hover:text-[#b50926] transition-colors"
+            aria-label="Następny dzień"
           >
-            Documentation
-          </a>
+            ›
+          </Link>
         </div>
-      </main>
+        <p className="text-sm text-gray-500">
+          Wydarzenia historyczne z dnia {dayMonthFull}
+        </p>
+      </div>
+
+      {/* Events list */}
+      <div className="space-y-6 mb-10">
+        {events.length > 0 ? (
+          events.map((event) => (
+            <EventItem key={event.id} event={event} />
+          ))
+        ) : (
+          <div className="text-center py-12 bg-white rounded-sm border border-gray-200">
+            <p className="text-gray-500 text-lg mb-2">Brak wydarzeń dla tego dnia</p>
+            <p className="text-gray-400 text-sm">
+              Dane zostaną zaimportowane z oryginalnej bazy d-w.pl
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Date picker section */}
+      <div className="bg-white rounded-sm border border-gray-200 p-6 text-center">
+        <h2 className="font-heading text-lg font-bold uppercase tracking-wider text-[#1d1d1b] mb-4">
+          Wybierz inną datę
+        </h2>
+        <DatePicker currentDate={displayDate} />
+      </div>
     </div>
-  );
+  )
 }
