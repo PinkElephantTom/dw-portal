@@ -1,7 +1,7 @@
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { extractYear, formatDayMonth, getMonthDay } from '@/lib/utils'
+import PhotoGallery from '@/components/PhotoGallery'
 import type { Metadata } from 'next'
 
 interface Photo {
@@ -111,28 +111,7 @@ export default async function EventPage({ params }: Props) {
               <h2 className="font-heading text-lg font-bold uppercase tracking-wider text-[#1d1d1b] border-b-2 border-[#b50926] pb-1 mb-4">
                 Galeria
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {photos.map((photo) => (
-                  <figure key={photo.id} className="bg-gray-50 rounded-sm overflow-hidden">
-                    <div className="relative aspect-[4/3]">
-                      <Image
-                        src={photo.url}
-                        alt={photo.title || 'Zdjęcie archiwalne'}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, 50vw"
-                      />
-                    </div>
-                    {(photo.title || photo.author || photo.source) && (
-                      <figcaption className="px-3 py-2 text-xs text-gray-500">
-                        {photo.title && <p className="font-medium text-gray-700">{photo.title}</p>}
-                        {photo.author && <p>fot. {photo.author}</p>}
-                        {photo.source && <p>źródło: {photo.source}</p>}
-                      </figcaption>
-                    )}
-                  </figure>
-                ))}
-              </div>
+              <PhotoGallery photos={photos} />
             </div>
           )}
         </div>
