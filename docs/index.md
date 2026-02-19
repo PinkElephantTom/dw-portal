@@ -15,7 +15,7 @@
 | Production URL | `dw-portal.vercel.app` (docelowo: `d-w.pl`) |
 | Kolor glowny | `#b50926` (ciemna czerwien, oryginalna barwa d-w.pl) |
 | Fonty | Oswald (naglowki) + Roboto (tekst) — identyczne z wkaliszu.pl |
-| Dev server port | `3002` (zeby nie kolidowac z wkaliszu na 3000) |
+| Dev server port | `3002` (zeby nie kolidowac z wkaliszu na 3001 i kavke na 3000) |
 
 ## Czym jest d-w.pl
 
@@ -33,7 +33,7 @@ Portal d-w.pl **wspoldzieli projekt Supabase** z portalem wkaliszu.pl (portal re
 | GitHub | `PinkElephantTom/dw-portal` | `PinkElephantTom/wkaliszu-portal` |
 | Kolor glowny | `#b50926` | `#b91c1c` (red-700) |
 | Tabele Supabase | `dw_events`, `dw_photos` | `articles`, `events`, `places`, `profiles`... |
-| Dev port | 3002 | 3000 |
+| Dev port | 3002 | 3001 |
 
 Tabele d-w.pl maja prefix `dw_` i nie koliduja z tabelami wkaliszu.
 
