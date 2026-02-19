@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { formatDayMonth, formatMonthNominative, getMonthDay, parseMonthDay, dateFromMonthDay } from '@/lib/utils'
+import { formatDayMonth, formatMonthGenitive, getMonthDay, parseMonthDay, dateFromMonthDay } from '@/lib/utils'
 import CalendarWidget from '@/components/CalendarWidget'
 import EventItem from '@/components/EventItem'
 
@@ -32,7 +32,7 @@ export default async function HomePage({ searchParams }: Props) {
 
   const mmdd = getMonthDay(displayDate)
   const dayNum = displayDate.getDate()
-  const monthName = formatMonthNominative(displayDate)
+  const monthName = formatMonthGenitive(displayDate)
   const dayMonthFull = formatDayMonth(displayDate)
 
   // ====== Fetch events from Supabase ======

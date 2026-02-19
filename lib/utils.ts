@@ -25,6 +25,13 @@ export function formatMonthNominative(date: Date): string {
 }
 
 /**
+ * Format: "LUTEGO" (uppercase genitive — for "19 LUTEGO")
+ */
+export function formatMonthGenitive(date: Date): string {
+  return POLISH_MONTHS[date.getMonth()].toUpperCase()
+}
+
+/**
  * Parse "YYYY-MM-DD" or extract year from event date string
  */
 export function extractYear(dateStr: string): number | null {
