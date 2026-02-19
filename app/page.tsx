@@ -1,10 +1,7 @@
 import Link from 'next/link'
-import { formatDayMonth, formatMonthNominative, getMonthDay, parseMonthDay, dateFromMonthDay, extractYear } from '@/lib/utils'
-import DatePicker from '@/components/DatePicker'
+import { formatDayMonth, formatMonthNominative, getMonthDay, parseMonthDay, dateFromMonthDay } from '@/lib/utils'
+import CalendarWidget from '@/components/CalendarWidget'
 import EventItem from '@/components/EventItem'
-
-// Supabase — will be connected after migration
-// import { createClient } from '@/lib/supabase/server'
 
 interface DwEvent {
   id: number
@@ -42,7 +39,6 @@ export default async function HomePage({ searchParams }: Props) {
   let events: DwEvent[] = []
 
   try {
-    // Dynamic import to avoid build errors when env vars aren't set
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
 
@@ -56,10 +52,10 @@ export default async function HomePage({ searchParams }: Props) {
       events = data as DwEvent[]
     }
   } catch {
-    // Supabase not configured yet — show empty state
+    // Supabase not configured yet
   }
 
-  // Calculate previous and next day links
+  // Previous / next day links
   const prevDate = new Date(displayDate)
   prevDate.setDate(prevDate.getDate() - 1)
   const nextDate = new Date(displayDate)
@@ -69,7 +65,7 @@ export default async function HomePage({ searchParams }: Props) {
   const nextLink = `/?data=${getMonthDay(nextDate)}`
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Date header */}
       <div className="text-center mb-8">
         <h1 className="font-heading text-sm font-semibold uppercase tracking-widest text-gray-500 mb-1">
@@ -78,7 +74,7 @@ export default async function HomePage({ searchParams }: Props) {
         <div className="flex items-center justify-center gap-4 mb-2">
           <Link
             href={prevLink}
-            className="text-2xl text-gray-400 hover:text-[#b50926] transition-colors"
+            className="text-3xl text-gray-300 hover:text-[#b50926] transition-colors leading-none"
             aria-label="Poprzedni dzień"
           >
             ‹
@@ -93,7 +89,7 @@ export default async function HomePage({ searchParams }: Props) {
           </div>
           <Link
             href={nextLink}
-            className="text-2xl text-gray-400 hover:text-[#b50926] transition-colors"
+            className="text-3xl text-gray-300 hover:text-[#b50926] transition-colors leading-none"
             aria-label="Następny dzień"
           >
             ›
@@ -104,28 +100,45 @@ export default async function HomePage({ searchParams }: Props) {
         </p>
       </div>
 
-      {/* Events list */}
-      <div className="space-y-6 mb-10">
-        {events.length > 0 ? (
-          events.map((event) => (
-            <EventItem key={event.id} event={event} />
-          ))
-        ) : (
-          <div className="text-center py-12 bg-white rounded-sm border border-gray-200">
-            <p className="text-gray-500 text-lg mb-2">Brak wydarzeń dla tego dnia</p>
-            <p className="text-gray-400 text-sm">
-              Dane zostaną zaimportowane z oryginalnej bazy d-w.pl
+      {/* Main content: events (left) + calendar sidebar (right) */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Events — left column */}
+        <div className="flex-1 min-w-0 space-y-6">
+          {events.length > 0 ? (
+            events.map((event) => (
+              <EventItem key={event.id} event={event} />
+            ))
+          ) : (
+            <div className="text-center py-12 bg-white rounded-sm border border-gray-200">
+              <p className="text-gray-500 text-lg mb-2">Brak wydarzeń dla tego dnia</p>
+              <p className="text-gray-400 text-sm">
+                Dane zostaną zaimportowane z oryginalnej bazy d-w.pl
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Sidebar — right column (calendar + contact) */}
+        <aside className="lg:w-[280px] shrink-0 space-y-6">
+          {/* Calendar widget */}
+          <CalendarWidget currentDate={displayDate} />
+
+          {/* Contact box */}
+          <div className="bg-white rounded-sm border border-gray-200 p-4">
+            <h3 className="font-heading text-sm font-bold uppercase tracking-wider text-[#1d1d1b] mb-2">
+              Kontakt
+            </h3>
+            <p className="text-sm text-gray-500">
+              e-mail:{' '}
+              <a
+                href="mailto:kalendarium.pld.wlkp@gmail.com"
+                className="text-[#b50926] hover:text-[#8f071e] transition-colors break-all"
+              >
+                kalendarium.pld.wlkp@gmail.com
+              </a>
             </p>
           </div>
-        )}
-      </div>
-
-      {/* Date picker section */}
-      <div className="bg-white rounded-sm border border-gray-200 p-6 text-center">
-        <h2 className="font-heading text-lg font-bold uppercase tracking-wider text-[#1d1d1b] mb-4">
-          Wybierz inną datę
-        </h2>
-        <DatePicker currentDate={displayDate} />
+        </aside>
       </div>
     </div>
   )
