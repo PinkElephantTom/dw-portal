@@ -3,21 +3,77 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createEvent } from '@/app/admin/actions'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Save, CheckCircle, Pencil } from 'lucide-react'
+import PhotoManager from '@/components/admin/PhotoManager'
 
 export default function NewEventPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [createdEventId, setCreatedEventId] = useState<number | null>(null)
 
   async function handleSubmit(formData: FormData) {
     setError('')
     setLoading(true)
     const result = await createEvent(formData)
+    setLoading(false)
+
     if (result?.error) {
       setError(result.error)
-      setLoading(false)
+    } else if (result?.id) {
+      setCreatedEventId(result.id)
     }
-    // On success, createEvent redirects to the edit page
+  }
+
+  // After event creation — show success + photo manager
+  if (createdEventId) {
+    return (
+      <div className="max-w-3xl">
+        <div className="mb-6">
+          <Link
+            href="/admin/wydarzenia"
+            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#b50926] transition-colors mb-3"
+          >
+            <ArrowLeft size={14} />
+            Powrót do listy
+          </Link>
+          <h1 className="font-heading text-2xl font-bold text-[#1d1d1b]">Nowe wydarzenie</h1>
+        </div>
+
+        {/* Success message */}
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+          <CheckCircle size={20} className="text-green-600 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-green-800">Wydarzenie zostało utworzone.</p>
+            <p className="text-sm text-green-600 mt-1">Teraz możesz dodać zdjęcia do tego wydarzenia.</p>
+          </div>
+        </div>
+
+        {/* Photo management */}
+        <div className="mb-6">
+          <h2 className="font-heading text-lg font-bold text-[#1d1d1b] mb-4 border-b border-gray-200 pb-2">
+            Zdjęcia
+          </h2>
+          <PhotoManager eventId={createdEventId} photos={[]} />
+        </div>
+
+        {/* Navigation */}
+        <div className="flex gap-3">
+          <Link
+            href={`/admin/wydarzenia/${createdEventId}`}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#b50926] hover:bg-[#8f071e] text-white text-xs font-heading font-semibold uppercase tracking-wider rounded-md transition-colors"
+          >
+            <Pencil size={14} />
+            Edytuj wydarzenie
+          </Link>
+          <Link
+            href="/admin/wydarzenia"
+            className="inline-flex items-center px-4 py-2.5 text-xs font-heading font-semibold uppercase tracking-wider text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+          >
+            Wróć do listy
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (
