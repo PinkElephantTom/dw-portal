@@ -40,5 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# sql dumps
+# sql dumps (but keep migration files)
 *.sql
+!supabase/migrations/*.sql

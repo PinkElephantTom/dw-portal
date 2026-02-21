@@ -21,3 +21,11 @@ export interface DwPhoto {
 export interface DwEventWithPhotos extends DwEvent {
   photos: DwPhoto[]
 }
+
+export interface DwAdminUser {
+  id: string
+  email: string
+  display_name: string | null
+  role: 'admin' | 'editor'
+  created_at: string
+}
