@@ -10,6 +10,7 @@
 | Stack | Next.js 16.1.6 + React 19 + Supabase + Tailwind CSS v4 + TypeScript 5 |
 | Katalog projektu | `/Users/malgo1/APP/dw-portal/` |
 | Supabase project ID | `jypywxllbigwvpvauqjo` (wspoldzielony z wkaliszu.pl) |
+| Supabase Storage | bucket `event-photos` (publiczny odczyt, upload dla zalogowanych) |
 | GitHub | `PinkElephantTom/dw-portal` |
 | Vercel project | `dw-portal` (team: `tomekskorzewski-5310s-projects`) |
 | Production URL | `dw-portal.vercel.app` (docelowo: `d-w.pl`) |
@@ -71,27 +72,68 @@ Dwie tabele z prefixem `dw_`:
 | source | TEXT | Zrodlo |
 | created_at | TIMESTAMPTZ | Data dodania |
 
+### dw_admin_users
+| Kolumna | Typ | Opis |
+|---------|-----|------|
+| id | UUID PK → auth.users | Powiazanie z kontem Supabase Auth |
+| email | TEXT NOT NULL | Email admina |
+| display_name | TEXT | Wyswietlana nazwa |
+| role | TEXT NOT NULL | `admin` lub `editor` |
+| created_at | TIMESTAMPTZ | Data dodania |
+
 **Stan bazy**: 5721 wydarzen + 4462 zdjecia (pelny import z produkcji).
 
-**RLS**: Publiczny odczyt (SELECT) wlaczony. Zapis wymaga service role.
+**RLS**: Publiczny odczyt (SELECT) wlaczony. Zapis przez funkcje `is_dw_admin()` / `is_dw_admin_role()` (SECURITY DEFINER, unikaja rekurencji RLS). Usuwanie wydarzen — tylko admin.
 
 **Glowne query**: `WHERE event_date LIKE '%-MM-DD'` — szuka wydarzen po dniu i miesiacu, ignorujac rok.
 
-**Zdjecia**: URL-e wskazuja na `https://d-w.pl/upload/...` (oryginalny serwer). Docelowo do przeniesienia na Supabase Storage.
+**Zdjecia**: Stare URL-e wskazuja na `https://d-w.pl/upload/...` (oryginalny serwer). Nowe zdjecia uploadowane na Supabase Storage (bucket `event-photos`).
 
-Migracja SQL: `supabase/migrations/001_create_dw_tables.sql`
+Migracje SQL:
+- `supabase/migrations/001_create_dw_tables.sql` — schemat tabel dw_events + dw_photos
+- `supabase/migrations/002_admin_users.sql` — tabela dw_admin_users + polityki RLS
 
 ## Strony
 
+### Publiczne (grupa `(public)/`)
+
 | Route | Plik | Opis |
 |-------|------|------|
-| `/` | `app/page.tsx` | Kalendarium dnia — duza data, lista wydarzen, kalendarz sidebar |
+| `/` | `app/(public)/page.tsx` | Kalendarium dnia — duza data, lista wydarzen, kalendarz sidebar |
 | `/?data=MM-DD` | j.w. | Kalendarium na konkretny dzien |
-| `/wydarzenie/[id]` | `app/wydarzenie/[id]/page.tsx` | Szczegoly wydarzenia + galeria zdjec z lightboxem |
-| `/szukaj` | `app/szukaj/page.tsx` | Wyszukiwarka pelnotekstowa |
+| `/wydarzenie/[id]` | `app/(public)/wydarzenie/[id]/page.tsx` | Szczegoly wydarzenia + galeria zdjec z lightboxem |
+| `/szukaj` | `app/(public)/szukaj/page.tsx` | Wyszukiwarka pelnotekstowa |
 | `/szukaj?q=QUERY` | j.w. | Wyniki wyszukiwania |
 
+### Panel admina (`/admin`)
+
+| Route | Plik | Opis |
+|-------|------|------|
+| `/admin/login` | `app/admin/login/page.tsx` | Logowanie (Supabase Auth, email + haslo) |
+| `/admin` | `app/admin/page.tsx` | Dashboard — statystyki, ostatnie zmiany |
+| `/admin/wydarzenia` | `app/admin/wydarzenia/page.tsx` | Lista wydarzen z paginacja i wyszukiwaniem |
+| `/admin/wydarzenia/nowe` | `app/admin/wydarzenia/nowe/page.tsx` | Dodawanie wydarzenia + upload zdjec po zapisie |
+| `/admin/wydarzenia/[id]` | `app/admin/wydarzenia/[id]/page.tsx` | Edycja wydarzenia + zarzadzanie zdjeciami |
+| `/admin/uzytkownicy` | `app/admin/uzytkownicy/page.tsx` | Zarzadzanie administratorami (tylko rola admin) |
+
+**Middleware** (`middleware.ts`): chroni trasy `/admin/*` — niezalogowani sa przekierowywani na `/admin/login`.
+
+**Layouty**:
+- `app/layout.tsx` — root layout (fonty, globalne style)
+- `app/(public)/layout.tsx` — publiczny layout z Header + Footer
+- `app/admin/layout.tsx` — admin layout z ciemnym sidebarem + topbar z logoutem
+
+**Server Actions** (`app/admin/actions.ts`):
+- `createEvent`, `updateEvent`, `deleteEvent` — CRUD wydarzen
+- `addPhoto` (po URL), `uploadPhotoFile` (upload na Supabase Storage), `updatePhoto`, `deletePhoto`
+
+**API Route** (`app/api/admin/users/route.ts`): POST/PATCH/DELETE uzytkownikow (wymaga service role key).
+
+**Role**: `admin` (pelne uprawnienia + zarzadzanie userami) i `editor` (CRUD bez usuwania wydarzen).
+
 ## Komponenty
+
+### Publiczne
 
 | Komponent | Plik | Opis |
 |-----------|------|------|
@@ -102,6 +144,16 @@ Migracja SQL: `supabase/migrations/001_create_dw_tables.sql`
 | PhotoGallery | `components/PhotoGallery.tsx` | Galeria zdjec z lightboxem (object-contain + zoom) |
 | DatePicker | `components/DatePicker.tsx` | Selecty dzien/miesiac (fallback) |
 | SearchForm | `components/SearchForm.tsx` | Formularz wyszukiwania na stronie /szukaj |
+
+### Admin
+
+| Komponent | Plik | Opis |
+|-----------|------|------|
+| AdminSidebar | `components/admin/AdminSidebar.tsx` | Responsywna nawigacja boczna (ciemny motyw) |
+| EditEventForm | `components/admin/EditEventForm.tsx` | Formularz edycji wydarzenia |
+| PhotoManager | `components/admin/PhotoManager.tsx` | Upload zdjec (drag & drop / URL), edycja metadanych, usuwanie |
+| DeleteEventButton | `components/admin/DeleteEventButton.tsx` | Usuwanie z dwuetapowym potwierdzeniem |
+| AdminUserManager | `components/admin/AdminUserManager.tsx` | Zarzadzanie rolami i kontami adminow |
 
 ## Nawigacja (Header)
 
@@ -176,9 +228,15 @@ Pliki oryginalnej strony d-w.pl (PHP):
 - [x] Live search w headerze (debounce, dropdown z wynikami)
 - [x] Galeria zdjec z lightboxem (object-contain, zoom, nawigacja)
 - [x] Uproszczona nawigacja (burger + logo + search)
-- [ ] Panel admina (dodawanie/edycja wydarzen)
-- [ ] Logowanie admina (Supabase Auth)
+- [x] Panel admina — logowanie Supabase Auth, middleware, layout z sidebarem
+- [x] CRUD wydarzen — lista z paginacja/wyszukiwaniem, dodawanie, edycja, usuwanie
+- [x] Upload zdjec na Supabase Storage (drag & drop, podglad, walidacja formatu/rozmiaru)
+- [x] Edycja metadanych zdjec (tytul, autor, zrodlo) — inline w PhotoManager
+- [x] Dodawanie zdjec po URL (kompatybilnosc z istniejacymi linkami d-w.pl)
+- [x] Dashboard admina — statystyki, ostatnie zmiany
+- [x] Zarzadzanie administratorami (role admin/editor)
+- [x] RLS: funkcje SECURITY DEFINER (is_dw_admin, is_dw_admin_role) — bez rekurencji
+- [ ] Migracja ~4462 istniejacych zdjec z d-w.pl/upload/ do Supabase Storage
 - [ ] Przeniesc domene d-w.pl na Vercel
-- [ ] Upload i migracja ~4462 zdjec do Supabase Storage (zamiast linkow do d-w.pl)
 - [ ] SEO: meta tagi, Open Graph, sitemap
 - [ ] Polskie znaki w URL-ach (slug zamiast ID)
