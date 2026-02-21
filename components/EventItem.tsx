@@ -62,7 +62,16 @@ export default function EventItem({ event }: { event: DwEvent }) {
           </div>
         )}
 
-
+        {/* Photo credits — only authors, source on detail page */}
+        {photos.length > 0 && photos.some(p => p.author) && (
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+            {photos.filter(p => p.author).map((photo) => (
+              <p key={photo.id} className="text-[10px] text-gray-400">
+                fot. {photo.author}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Link to detail page */}
