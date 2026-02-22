@@ -13,7 +13,7 @@
 | Supabase Storage | bucket `event-photos` (publiczny odczyt, upload dla zalogowanych) |
 | GitHub | `PinkElephantTom/dw-portal` |
 | Vercel project | `dw-portal` (team: `tomekskorzewski-5310s-projects`) |
-| Production URL | `dw-portal.vercel.app` (docelowo: `d-w.pl`) |
+| Production URL | `dw-portal-sand.vercel.app` (docelowo: `d-w.pl`) |
 | Kolor glowny | `#b50926` (ciemna czerwien, oryginalna barwa d-w.pl) |
 | Fonty | Oswald (naglowki) + Roboto (tekst) — identyczne z wkaliszu.pl |
 | Dev server port | `3002` (zeby nie kolidowac z wkaliszu na 3001 i kavke na 3000) |
@@ -222,6 +222,26 @@ Pliki oryginalnej strony d-w.pl (PHP):
 - Hosting: `/Users/malgo1/APP/d-w.pl/docs/HOSTINGI.md`
 - Roadmap PHP: `/Users/malgo1/APP/d-w.pl/ROADMAP.md`
 
+## Przekierowania starych URL-i (next.config.ts)
+
+Konfiguracja `redirects()` w `next.config.ts` zapewnia kompatybilnosc z 88 linkami z Wikipedii i innych zrodel zewnetrznych:
+
+| Stary URL (d-w.pl) | Nowy URL | Kod | Liczba linkow z Wikipedii |
+|---------------------|----------|-----|---------------------------|
+| `/event.php?ev=ID` | `/wydarzenie/ID` | 301 | 62 |
+| `/index.php?data=MM-DD` | `/?data=MM-DD` | 301 | 9 |
+| `/index.php` | `/` | 301 | — |
+| `/szukaj.php?t=QUERY` | `/szukaj?q=QUERY` | 301 | 6 |
+| `/galerie/*.html` | `/` | 302 | 2 |
+| `/felietony/*.html` | `/` | 302 | 1 |
+| `/fotorelacja/*.html` | `/` | 302 | 2 |
+| `/kalisz/*.html` | `/` | 302 | 1 |
+| `/dodaj.php`, `/wkaliszu.php`, `/setting.php` | `/` | 301 | — |
+
+Stare podstrony Joomla maja 302 (temporary) zamiast 301, bo tresc nie istnieje w nowej wersji. Przekierowania dzialaja na poziomie Vercel edge (szybko, bez obciazania aplikacji).
+
+Warianty hostow: `http://d-w.pl`, `http://www.d-w.pl`, `https://d-w.pl`, `https://www.d-w.pl` — wszystkie beda obslugiwane po konfiguracji domeny.
+
 ## TODO
 
 - [x] Import pelnej bazy produkcyjnej z hitme.net.pl (5721 wydarzen + 4462 zdjecia)
@@ -236,7 +256,11 @@ Pliki oryginalnej strony d-w.pl (PHP):
 - [x] Dashboard admina — statystyki, ostatnie zmiany
 - [x] Zarzadzanie administratorami (role admin/editor)
 - [x] RLS: funkcje SECURITY DEFINER (is_dw_admin, is_dw_admin_role) — bez rekurencji
+- [x] Przekierowania starych URL-i d-w.pl (88 linkow z Wikipedii, konfiguracja w next.config.ts)
 - [ ] Migracja ~4462 istniejacych zdjec z d-w.pl/upload/ do Supabase Storage
-- [ ] Przeniesc domene d-w.pl na Vercel
+- [ ] **Podpiecie domeny d-w.pl pod Vercel** (w krotcej przyszlosci):
+  1. Vercel: Settings → Domains → dodac `d-w.pl`
+  2. Dodac `www.d-w.pl` z redirectem na `d-w.pl`
+  3. Zmienic DNS u rejestratora domeny (Vercel pokaze jakie rekordy ustawic: A + CNAME)
 - [ ] SEO: meta tagi, Open Graph, sitemap
 - [ ] Polskie znaki w URL-ach (slug zamiast ID)
