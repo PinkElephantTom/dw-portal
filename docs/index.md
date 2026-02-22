@@ -341,3 +341,15 @@ Strona wyszukiwania (`/szukaj`) ma `robots: { index: false, follow: true }` — 
   3. Zmienic DNS u rejestratora domeny (Vercel pokaze jakie rekordy ustawic: A + CNAME)
 - [x] SEO: metadataBase, Open Graph, Twitter Cards, JSON-LD, sitemap.xml, robots.txt
 - [ ] Polskie znaki w URL-ach (slug zamiast ID)
+
+### Nowe funkcjonalnosci (pomysly)
+
+- [ ] Wyszukiwanie po roku / zakresie lat
+- [ ] Kategorie wydarzen (polityka, kultura, sport, religia...)
+- [ ] Mapa — lokalizacje wydarzen na mapie regionu
+- [ ] API rozbudowane — wiecej endpointow (np. losowe wydarzenie, wydarzenia z zakresu dat)
+- [ ] Newsletter — codziennie email z wydarzeniami dnia
+- [ ] Integracja z mediami spolecznosciowymi — auto-posting wydarzen dnia
+- [ ] System komentarzy / uzupelnien od czytelnikow
+- [ ] Wersja wielojezyczna (angielska, niemiecka)
+- [ ] Strona "Ten dzien w historii" z rozbudowana prezentacja
