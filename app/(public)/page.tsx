@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { formatDayMonth, formatMonthGenitive, getMonthDay, parseMonthDay, dateFromMonthDay } from '@/lib/utils'
 import CalendarWidget from '@/components/CalendarWidget'
 import EventItem from '@/components/EventItem'
+import type { Metadata } from 'next'
 
 interface DwEvent {
   id: number
@@ -12,6 +13,32 @@ interface DwEvent {
 
 interface Props {
   searchParams: Promise<{ data?: string }>
+}
+
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  const params = await searchParams
+  let displayDate: Date
+  if (params.data) {
+    const parsed = parseMonthDay(params.data)
+    displayDate = parsed ? dateFromMonthDay(parsed.month, parsed.day) : new Date()
+  } else {
+    displayDate = new Date()
+  }
+  const dayMonthFull = formatDayMonth(displayDate)
+  const mmdd = getMonthDay(displayDate)
+
+  return {
+    title: `${dayMonthFull} — Kalendarium Południowej Wielkopolski`,
+    description: `Wydarzenia historyczne z ${dayMonthFull} w Południowej Wielkopolsce. Odkryj co wydarzyło się tego dnia w historii regionu kaliskiego.`,
+    openGraph: {
+      title: `${dayMonthFull} — Kalendarium Południowej Wielkopolski`,
+      description: `Wydarzenia historyczne z ${dayMonthFull} w Południowej Wielkopolsce.`,
+      url: params.data ? `/?data=${mmdd}` : '/',
+    },
+    alternates: {
+      canonical: params.data ? `/?data=${mmdd}` : '/',
+    },
+  }
 }
 
 export default async function HomePage({ searchParams }: Props) {
@@ -140,6 +167,26 @@ export default async function HomePage({ searchParams }: Props) {
           </div>
         </aside>
       </div>
+
+      {/* JSON-LD Structured Data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'D-W.PL — Kalendarium Południowej Wielkopolski',
+            url: 'https://d-w.pl',
+            description: 'Kalendarium Południowej Wielkopolski — wydarzenia historyczne z każdego dnia.',
+            inLanguage: 'pl',
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: 'https://d-w.pl/szukaj?q={search_term_string}',
+              'query-input': 'required name=search_term_string',
+            },
+          }),
+        }}
+      />
     </div>
   )
 }

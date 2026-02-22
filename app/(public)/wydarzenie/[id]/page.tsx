@@ -48,10 +48,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const year = extractYear(event.event_date)
   const desc = event.description.slice(0, 160)
+  const title = year ? `${year} — ${desc}` : desc
+  const description = event.description.slice(0, 300)
+  const firstPhoto = event.photos?.[0]
 
   return {
-    title: year ? `${year} — ${desc}` : desc,
-    description: event.description.slice(0, 300),
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      url: `/wydarzenie/${id}`,
+      ...(firstPhoto && {
+        images: [{ url: firstPhoto.url, alt: firstPhoto.title || description }],
+      }),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      ...(firstPhoto && { images: [firstPhoto.url] }),
+    },
+    alternates: {
+      canonical: `/wydarzenie/${id}`,
+    },
   }
 }
 
@@ -135,6 +156,74 @@ export default async function EventPage({ params }: Props) {
           </Link>
         )}
       </div>
+
+      {/* JSON-LD: Article */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Article',
+            headline: year
+              ? `${year} — ${event.description.slice(0, 110)}`
+              : event.description.slice(0, 110),
+            description: event.description.slice(0, 300),
+            datePublished: event.event_date,
+            ...(photos[0] && { image: photos[0].url }),
+            publisher: {
+              '@type': 'Organization',
+              name: 'D-W.PL',
+              url: 'https://d-w.pl',
+            },
+            mainEntityOfPage: {
+              '@type': 'WebPage',
+              '@id': `https://d-w.pl/wydarzenie/${id}`,
+            },
+          }),
+        }}
+      />
+
+      {/* JSON-LD: BreadcrumbList */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              {
+                '@type': 'ListItem',
+                position: 1,
+                name: 'Kalendarium',
+                item: 'https://d-w.pl',
+              },
+              ...(mmdd && dateObj
+                ? [
+                    {
+                      '@type': 'ListItem',
+                      position: 2,
+                      name: formatDayMonth(dateObj),
+                      item: `https://d-w.pl/?data=${mmdd}`,
+                    },
+                    {
+                      '@type': 'ListItem',
+                      position: 3,
+                      name: `Wydarzenie #${id}`,
+                      item: `https://d-w.pl/wydarzenie/${id}`,
+                    },
+                  ]
+                : [
+                    {
+                      '@type': 'ListItem',
+                      position: 2,
+                      name: `Wydarzenie #${id}`,
+                      item: `https://d-w.pl/wydarzenie/${id}`,
+                    },
+                  ]),
+            ],
+          }),
+        }}
+      />
     </div>
   )
 }

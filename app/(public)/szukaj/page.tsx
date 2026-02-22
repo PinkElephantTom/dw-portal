@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Szukaj w kalendarium',
+  robots: { index: false, follow: true },
 }
 
 interface DwEvent {
