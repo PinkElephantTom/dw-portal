@@ -242,6 +242,83 @@ Stare podstrony Joomla maja 302 (temporary) zamiast 301, bo tresc nie istnieje w
 
 Warianty hostow: `http://d-w.pl`, `http://www.d-w.pl`, `https://d-w.pl`, `https://www.d-w.pl` — wszystkie beda obslugiwane po konfiguracji domeny.
 
+## SEO
+
+Kompleksowa optymalizacja SEO zaimplementowana w projekcie.
+
+### Pliki SEO
+
+| Plik | Rola |
+|------|------|
+| `app/layout.tsx` | `metadataBase`, globalne OG/Twitter, canonical, robots |
+| `app/(public)/page.tsx` | `generateMetadata()` — dynamiczne title/description per date + JSON-LD WebSite |
+| `app/(public)/wydarzenie/[id]/page.tsx` | `generateMetadata()` — OG article z obrazkiem + JSON-LD Article + BreadcrumbList |
+| `app/(public)/szukaj/page.tsx` | `robots: { index: false, follow: true }` — noindex |
+| `app/sitemap.ts` | Dynamiczny `/sitemap.xml` z Supabase |
+| `app/robots.ts` | `/robots.txt` — Allow /, Disallow /admin/ i /api/ |
+
+### metadataBase
+
+```ts
+metadataBase: new URL('https://d-w.pl')
+```
+
+Ustawiony w root layout. Dzieki temu wszystkie relatywne URL-e w OG images, canonical, alternates sa automatycznie rozwiazywane na `https://d-w.pl/...`. Wazne: na sandboxie (`dw-portal-sand.vercel.app`) meta tagi juz wskazuja na `d-w.pl` — to zamierzone zachowanie.
+
+### Open Graph i Twitter Cards
+
+**Globalne** (root layout): domyslne OG z logo `logo-fb.png`, locale `pl_PL`, siteName `D-W.PL`.
+
+**Strona glowna** (`generateMetadata`): dynamiczny tytul per date, np. "22 lutego — Kalendarium Poludniowej Wielkopolski".
+
+**Strona wydarzenia** (`generateMetadata`):
+- `og:type = article`
+- `og:image` = pierwsze zdjecie wydarzenia (jesli istnieje), fallback na globalne logo
+- `twitter:card = summary_large_image`
+- `canonical` = `/wydarzenie/{id}`
+
+### Structured Data (JSON-LD)
+
+Strona glowna zawiera JSON-LD `WebSite` z `SearchAction`:
+```json
+{ "@type": "WebSite", "potentialAction": { "@type": "SearchAction", "target": "https://d-w.pl/szukaj?q={search_term_string}" } }
+```
+Umozliwia wyszukiwanie bezposrednio z wynikow Google (sitelinks search box).
+
+Strona wydarzenia zawiera:
+- JSON-LD `Article` (headline, datePublished, publisher, image)
+- JSON-LD `BreadcrumbList` (Kalendarium > Data > Wydarzenie)
+
+### Sitemap (`app/sitemap.ts`)
+
+Dynamiczny XML generowany przez Next.js. Zawiera:
+- `/` — strona glowna, priority 1.0, changeFrequency daily
+- 366 stron dziennych (`/?data=01-01` do `/?data=12-31`) — priority 0.8, monthly
+- Wszystkie wydarzenia z `dw_events` (`/wydarzenie/{id}`) — priority 0.6, yearly, z `lastModified` z pola `updated_at`
+
+Dane pobierane z Supabase w momencie generowania. Na Vercel generowany dynamicznie (server-rendered).
+
+### robots.txt (`app/robots.ts`)
+
+```
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Sitemap: https://d-w.pl/sitemap.xml
+```
+
+### Noindex
+
+Strona wyszukiwania (`/szukaj`) ma `robots: { index: false, follow: true }` — Google nie indeksuje stron wynikow, ale podaza za linkami na nich.
+
+### Wazne zasady
+
+- **Nie modyfikuj `next.config.ts` redirects** — 88 linkow z Wikipedii zalezy od tych przekierowan
+- **`metadataBase` musi wskazywac na `https://d-w.pl`** — zmiana zlamie wszystkie OG URL-e
+- **JSON-LD URL-e sa hardcoded na `https://d-w.pl`** — jesli domena sie zmieni, trzeba zaktualizowac tez JSON-LD w page.tsx i wydarzenie/[id]/page.tsx
+- **Sitemap BASE_URL** w `app/sitemap.ts` — tez hardcoded, zmiana domeny wymaga aktualizacji
+
 ## TODO
 
 - [x] Import pelnej bazy produkcyjnej z hitme.net.pl (5721 wydarzen + 4462 zdjecia)
@@ -262,5 +339,5 @@ Warianty hostow: `http://d-w.pl`, `http://www.d-w.pl`, `https://d-w.pl`, `https:
   1. Vercel: Settings → Domains → dodac `d-w.pl`
   2. Dodac `www.d-w.pl` z redirectem na `d-w.pl`
   3. Zmienic DNS u rejestratora domeny (Vercel pokaze jakie rekordy ustawic: A + CNAME)
-- [ ] SEO: meta tagi, Open Graph, sitemap
+- [x] SEO: metadataBase, Open Graph, Twitter Cards, JSON-LD, sitemap.xml, robots.txt
 - [ ] Polskie znaki w URL-ach (slug zamiast ID)
